@@ -78,6 +78,15 @@ body[data-theme=dark] .tg,[data-theme=dark] .tg{background:var(--blue)}[data-the
 #splash .lg{position:relative;width:min(300px,72vw);aspect-ratio:631/209}
 #splash .lg i{position:absolute;background-image:var(--lg);background-repeat:no-repeat;mix-blend-mode:multiply}
 #splash .tg2{margin:26px 0 0;font-size:18px;font-weight:700;color:#042D60;opacity:0}
+#mnt,#urg{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;padding:24px}
+#mnt{background:var(--bg);flex-direction:column;text-align:center}
+#mnt .ic{width:84px;height:84px;border-radius:24px;background:var(--tint);color:var(--blue);display:grid;place-items:center;margin-bottom:20px}#mnt .ic svg{width:44px;height:44px}
+#mnt p{max-width:320px;color:var(--muted);line-height:1.8;margin:0 0 22px;white-space:pre-wrap}
+#mnt .btn{max-width:260px}#mnt a{margin-top:18px;color:var(--muted);font-size:13px}
+#urg{background:rgba(4,45,96,.55)}
+#urg .bx{background:var(--bg);border-radius:22px;padding:26px 22px 20px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+#urg .ic{width:56px;height:56px;border-radius:50%;background:var(--orange);color:#fff;display:grid;place-items:center;margin:-56px auto 14px;border:5px solid var(--bg)}#urg .ic svg{width:26px;height:26px}
+#urg h3{margin:0 0 8px;font-size:19px}#urg p{margin:0 0 18px;line-height:1.8;color:var(--muted);white-space:pre-wrap}
 </style>
 </head>
 <body class="nonav">
@@ -194,6 +203,8 @@ setTimeout(go,150);
   <a class="mi" id="adm" href="admin.html" style="display:none"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>لوحة الإدارة</a>
   <button class="mi out" id="logout"><svg viewBox="0 0 24 24"><path d="M10 4.5H6A1.5 1.5 0 0 0 4.5 6v12A1.5 1.5 0 0 0 6 19.5h4M15 8l4 4-4 4M19 12H9.5"/></svg>تسجيل الخروج</button>
 </aside>
+<div id="mnt"><div class="ic"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.500-5.500a4 4 0 0 0 5-5l-2.500 2.500-2.500-.5-.5-2.500Z"/></svg></div><h1>التطبيق تحت الصيانة</h1><p id="mnt-m"></p><button class="btn" id="mnt-r">إعادة المحاولة</button><a href="admin.html">دخول الإدارة</a></div>
+<div id="urg"><div class="bx"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.500l1.500 2h-15ZM10 21h4"/></svg></div><h3 id="urg-t"></h3><p id="urg-b"></p><button class="btn" id="urg-ok">حسناً</button></div></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -255,7 +266,7 @@ async function enter(){
   if(me.must_change_password)return show('v-chpw');home()}
 async function home(){
   var s=await sb.from('services').select('*').eq('is_active',true).order('sort_order');services=s.data||[];
-  await countUnread();render('');show('v-home')}
+  await countUnread();render('');show('v-home');checkFlags()}
 async function countUnread(){
   var a=await sb.from('notifications').select('id'),b=await sb.from('notification_reads').select('notification_id'),seen={};
   (b.data||[]).forEach(function(x){seen[x.notification_id]=1});unread=(a.data||[]).filter(function(x){return !seen[x.id]}).length;
@@ -302,6 +313,18 @@ window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dip
 if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!std)$('inst').style.display='flex';
 $('inst').onclick=function(){if(dip){dip.prompt();dip=null;$('inst').style.display='none'}else{sub('تثبيت التطبيق','<div class="note"><p>في آيفون: اضغط زر المشاركة في سفاري، ثم «إضافة إلى الشاشة الرئيسية».\n\nفي أندرويد: اضغط قائمة المتصفح (⋮) ثم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</p></div>')}};
 if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+var ST={};
+async function checkFlags(){
+  var r=await sb.from('app_settings').select('key,value').in('key',['maintenance','urgent']);if(r.error||!r.data)return;
+  ST={};r.data.forEach(function(x){ST[x.key]=x.value});
+  var m=ST.maintenance||{},block=m.on&&(!me||me.role!=='admin');
+  $('mnt').style.display=block?'flex':'none';$('mnt-m').textContent=m.message||'نعمل على تحسين التطبيق وسيعود قريباً.';
+  var u=ST.urgent||{},seen='';try{seen=localStorage.getItem('b24u')}catch(x){}
+  if(!block&&me&&u.on&&u.id!==seen&&(!u.expires_at||new Date(u.expires_at)>new Date())){$('urg-t').textContent=u.title||'إشعار عاجل';$('urg-b').textContent=u.body||'';$('urg').dataset.id=u.id;$('urg').style.display='flex'}}
+$('urg-ok').onclick=function(){try{localStorage.setItem('b24u',$('urg').dataset.id)}catch(x){}$('urg').style.display='none'};
+$('mnt-r').onclick=function(){location.reload()};
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkFlags()});
+checkFlags();
 sb.auth.getSession().then(function(r){if(r.data.session)enter()});
 </script>
 </body>

@@ -111,6 +111,17 @@ h3.t{font-size:16px;margin:18px 0 8px}
     <div id="rb"></div><p class="msg" id="rm"></p>
     <h3 class="t">النتائج</h3><div id="l6"></div>
   </section>
+  <section class="p" id="s6">
+    <div class="card"><div class="h"><h3 style="margin:0">وضع الصيانة</h3><button class="sw" id="mt" aria-label="تفعيل"></button></div>
+      <small style="color:#5B6B80;line-height:1.6;display:block">عند تفعيله يرى الطلاب رسالتك بدل التطبيق. لوحة الإدارة تبقى تعمل.</small>
+      <textarea class="in" id="mm" placeholder="التطبيق تحت الصيانة وسيعود قريباً" style="margin-top:10px"></textarea>
+      <button class="btn full" id="ms">حفظ</button></div>
+    <div class="card"><h3>الإشعار العاجل</h3>
+      <small id="us" style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.6"></small>
+      <input class="in" id="ut" placeholder="العنوان"><textarea class="in" id="ub" placeholder="نص الإشعار العاجل"></textarea>
+      <span class="lab">مدة الظهور</span><select class="in" id="ud"><option value="1">ساعة</option><option value="6">6 ساعات</option><option value="24" selected>يوم</option><option value="72">3 أيام</option><option value="0">حتى أوقفه</option></select>
+      <div class="acts"><button class="btn" id="up">نشر</button><button class="btn out" id="ux">إيقاف</button></div></div>
+  </section>
   </main>
   <div style="padding:8px 20px 0"><button class="btn out full" id="out">تسجيل الخروج</button></div>
 </div></div>
@@ -125,12 +136,12 @@ function norm(s){return String(s==null?'':s).replace(/[٠-٩]/g,function(d){retu
 function dt(s){return s?new Date(s).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}):''}
 function pane(id){['login','app'].forEach(function(x){$(x).classList.toggle('on',x===id)})}
 function err(r){if(r&&r.error){alert('فشل: '+r.error.message);return true}}
-var IC={u:'<path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 5 17.5V19M10.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>',h:'<path d="M8 4v16M16 4v16M4 8h16M4 16h16"/>',k:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',g:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',b:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15ZM10 21h4"/>',r:'<circle cx="12" cy="9" r="5.5"/><path d="m9 13.5-1.5 6.5 4.5-2.5 4.5 2.5-1.5-6.5"/>',ed:'<path d="M4 20h4L19 9l-4-4L4 16ZM13.5 6.5l4 4"/>',tr:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',w:'<path d="M12 4 3 19.5h18ZM12 10v4M12 17v.01"/>'};
+var IC={u:'<path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 5 17.5V19M10.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>',h:'<path d="M8 4v16M16 4v16M4 8h16M4 16h16"/>',k:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',g:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',b:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15ZM10 21h4"/>',r:'<circle cx="12" cy="9" r="5.5"/><path d="m9 13.5-1.5 6.5 4.5-2.5 4.5 2.5-1.5-6.5"/>',ed:'<path d="M4 20h4L19 9l-4-4L4 16ZM13.5 6.5l4 4"/>',tr:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',w:'<path d="M12 4 3 19.5h18ZM12 10v4M12 17v.01"/>',s:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 function ico(k,st){return '<svg viewBox="0 0 24 24"'+(st?' style="'+st+'"':'')+'>'+IC[k]+'</svg>'}
 var P=[],N=[],R=[],S=[],T=[],RS=[],editId=null,cur=0,B=null;
-var TABS=[['الطلاب','u'],['الأرقام الجامعية','h'],['طلبات كلمة السر','k'],['الخدمات','g'],['الإشعارات','b'],['النتائج','r']];
+var TABS=[['الطلاب','u'],['الأرقام الجامعية','h'],['طلبات كلمة السر','k'],['الخدمات','g'],['الإشعارات','b'],['النتائج','r'],['التحكم','s']];
 function tabs(){$('chips').innerHTML=TABS.map(function(t,i){return '<button class="chip'+(i===cur?' on':'')+'" role="tab" data-i="'+i+'">'+ico(t[1])+t[0]+(i===2&&R.length?'<i>'+R.length+'</i>':'')+'</button>'}).join('')}
-$('chips').onclick=function(e){var b=e.target.closest('.chip');if(!b)return;cur=+b.dataset.i;tabs();for(var k=0;k<6;k++)$('s'+k).classList.toggle('on',k===cur)};
+$('chips').onclick=function(e){var b=e.target.closest('.chip');if(!b)return;cur=+b.dataset.i;tabs();for(var k=0;k<7;k++)$('s'+k).classList.toggle('on',k===cur)};
 
 async function start(){
   var u=(await sb.auth.getUser()).data.user;if(!u)return pane('login');
@@ -146,9 +157,10 @@ async function load(){
   S=(await sb.from('services').select('*').order('sort_order')).data||[];
   T=(await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50)).data||[];
   RS=(await sb.from('results').select('*').order('created_at',{ascending:false})).data||[];
+  ST={};((await sb.from('app_settings').select('*')).data||[]).forEach(function(x){ST[x.key]=x.value});
   $('c1').textContent=P.length;$('c2').textContent=P.filter(function(x){return x.is_blocked}).length;
   $('n1').textContent=N.length;$('n2').textContent=N.filter(function(x){return x.claimed_by}).length;
-  tabs();r1();r2();r3();r4();r5();r6();
+  tabs();r1();r2();r3();r4();r5();r6();r7();
 }
 function r1(){var q=$('q1').value.trim(),nq=norm(q);
   $('l1').innerHTML=P.filter(function(x){return !q||(x.full_name||'').indexOf(q)>-1||x.student_number.indexOf(nq)>-1||(x.email||'').toLowerCase().indexOf(q.toLowerCase())>-1}).map(function(x){var nm=x.full_name||'بدون اسم';
@@ -246,6 +258,20 @@ $('l6').onclick=async function(e){var b=e.target.closest('button');if(!b)return;
   if(d.rd){x=RS.find(function(r){return r.id===d.rd});if(!confirm('حذف «'+x.title+'» نهائياً؟'))return;
     if(x.kind==='images'&&x.image_paths&&x.image_paths.length)await sb.storage.from('results').remove(x.image_paths);err(await sb.from('results').delete().eq('id',d.rd));load()}};
 
+/* ---- app control ---- */
+var ST={};
+function r7(){var m=ST.maintenance||{},u=ST.urgent||{};$('mt').classList.toggle('on',!!m.on);if(document.activeElement!==$('mm'))$('mm').value=m.message||'';
+  var live=u.on&&(!u.expires_at||new Date(u.expires_at)>new Date());
+  $('us').textContent=live?'منشور الآن: «'+u.title+'»'+(u.expires_at?' · ينتهي '+new Date(u.expires_at).toLocaleString('ar-EG'):' · حتى توقفه'):'لا يوجد إشعار عاجل منشور حالياً.'}
+async function setS(key,val){var r=await sb.from('app_settings').upsert({key:key,value:val});if(err(r))return false;ST[key]=val;r7();return true}
+$('mt').onclick=async function(){var on=!(ST.maintenance&&ST.maintenance.on);
+  if(on&&!confirm('تفعيل وضع الصيانة؟ لن يستطيع الطلاب استعمال التطبيق حتى تطفئه.'))return;
+  await setS('maintenance',{on:on,message:$('mm').value.trim()})};
+$('ms').onclick=async function(){if(await setS('maintenance',{on:!!(ST.maintenance&&ST.maintenance.on),message:$('mm').value.trim()}))alert('تم الحفظ')};
+$('up').onclick=async function(){var t=$('ut').value.trim(),b=$('ub').value.trim();if(!t||!b)return alert('اكتب العنوان والنص');
+  var h=+$('ud').value;if(!confirm('نشر الإشعار العاجل لكل الطلاب؟'))return;
+  if(await setS('urgent',{on:true,id:crypto.randomUUID(),title:t,body:b,expires_at:h?new Date(Date.now()+h*3600000).toISOString():null})){$('ut').value='';$('ub').value=''}};
+$('ux').onclick=async function(){await setS('urgent',{on:false})};
 $('lb').onclick=async function(){$('lm').textContent='';var r=await sb.auth.signInWithPassword({email:$('e').value.trim(),password:$('pw').value});
   if(r.error)return $('lm').textContent='الإيميل أو كلمة السر غير صحيحة';start()};
 $('out').onclick=async function(){await sb.auth.signOut();pane('login')};

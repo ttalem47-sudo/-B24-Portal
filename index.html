@@ -87,6 +87,10 @@ body[data-theme=dark] .tg,[data-theme=dark] .tg{background:var(--blue)}[data-the
 #urg .bx{background:var(--bg);border-radius:22px;padding:26px 22px 20px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 #urg .ic{width:56px;height:56px;border-radius:50%;background:var(--orange);color:#fff;display:grid;place-items:center;margin:-56px auto 14px;border:5px solid var(--bg)}#urg .ic svg{width:26px;height:26px}
 #urg h3{margin:0 0 8px;font-size:19px}#urg p{margin:0 0 18px;line-height:1.8;color:var(--muted);white-space:pre-wrap}
+.mi .tg.on{background:var(--blue)}.mi .tg.on::after{inset-inline-start:21px}
+.pbn{display:none;border:1px solid var(--line);background:var(--tint);border-radius:16px;padding:14px;margin:0 0 16px}
+.pbn b{display:block;margin-bottom:4px}.pbn small{display:block;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.pbn .r{display:flex;gap:8px}.pbn .btn{height:42px;margin:0;font-size:14px}
 </style>
 </head>
 <body class="nonav">
@@ -167,6 +171,7 @@ setTimeout(go,150);
 <section class="view main" id="v-home">
   <header class="top"><button class="ib" id="menu" aria-label="القائمة"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="logo" role="img" aria-label="B24 Portal"></div></header>
   <p class="hello">أهلاً بك</p><h1 id="hname">&nbsp;</h1>
+  <div class="pbn" id="pbn"><b>فعّل التنبيهات</b><small>تصلك النتائج والإشعارات والخدمات الجديدة فور نشرها حتى والتطبيق مغلق.</small><div class="r"><button class="btn" id="pbn-y">تفعيل</button><button class="btn o" id="pbn-n">لاحقاً</button></div></div>
   <label class="sw"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="ابحث عن خدمة" autocomplete="off"></label>
   <div class="list" id="list"></div>
 </section>
@@ -198,6 +203,7 @@ setTimeout(go,150);
   <div class="who"><div class="av" id="dav"></div><b id="dname"></b><br><small id="dnum"></small></div>
   <button class="mi" data-go="v-acc"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20c.8-3.8 3.7-6 7.5-6s6.7 2.2 7.5 6"/></svg>الملف الشخصي</button>
   <button class="mi" id="theme"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>المظهر الداكن<span class="tg"></span></button>
+  <button class="mi" id="push"><svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15ZM10 21h4"/></svg>التنبيهات<span class="tg" id="ptg"></span></button>
   <button class="mi" id="inst" style="display:none"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>تثبيت التطبيق</button>
   <button class="mi" id="about"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/></svg>عن التطبيق</button>
   <a class="mi" id="adm" href="admin.html" style="display:none"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>لوحة الإدارة</a>
@@ -228,6 +234,29 @@ function setTheme(t){document.documentElement.setAttribute('data-theme',t);try{l
 try{setTheme(localStorage.getItem('b24t')==='dark'?'dark':'light')}catch(x){}
 $('theme').onclick=function(){setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')};
 
+/* ---- push notifications ---- */
+var VAPID='BAnfDgLhhHG-f-iPKZ-RLXXMtU618llAM_Jx0SsHMKOZAxgqsi6kE6LxyHYgXiiGEBicAYP-Q4GPKnn62v71GxQ';
+function u8(b){var p='='.repeat((4-b.length%4)%4),s=(b+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(s),o=new Uint8Array(r.length);for(var i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o}
+var pushOK='serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+function getReg(){return Promise.race([navigator.serviceWorker.ready,new Promise(function(r){setTimeout(function(){r(null)},4000)})])}
+async function pushSub(){var g=await getReg();return g?g.pushManager.getSubscription():null}
+async function pushSave(s){return sb.from('push_subscriptions').upsert({user_id:user.id,endpoint:s.endpoint,subscription:s.toJSON()},{onConflict:'endpoint'})}
+async function pushOn(){
+  if(!pushOK){sub('التنبيهات','<div class="note"><p>جهازك لا يدعم التنبيهات من المتصفح.\n\nفي آيفون: ثبّت التطبيق على الشاشة الرئيسية أولاً، ثم افتحه من الأيقونة وفعّل التنبيهات.</p></div>');return false}
+  var p=await Notification.requestPermission();if(p!=='granted'){toast('لم يتم السماح بالتنبيهات. فعّلها من إعدادات الموقع');return false}
+  var g=await getReg();if(!g){toast('حدّث الصفحة ثم حاول مرة أخرى');return false}
+  var s=(await g.pushManager.getSubscription())||(await g.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID)}));
+  var r=await pushSave(s);if(r.error){toast('تعذّر حفظ التنبيهات');return false}toast('تم تفعيل التنبيهات');return true}
+async function pushOff(){var s=await pushSub();if(s){await sb.from('push_subscriptions').delete().eq('endpoint',s.endpoint);await s.unsubscribe()}toast('تم إيقاف التنبيهات')}
+async function pushState(){if(!pushOK||!user)return;var s=await pushSub(),on=Notification.permission==='granted'&&!!s;
+  if(on)pushSave(s);$('ptg').classList.toggle('on',on);var d='';try{d=localStorage.getItem('b24pn')}catch(x){}
+  $('pbn').style.display=(!on&&Notification.permission==='default'&&!d)?'block':'none'}
+$('push').onclick=async function(){document.body.classList.remove('open');var s=pushOK?await pushSub():null;
+  if(s&&Notification.permission==='granted')await pushOff();else await pushOn();pushState()};
+$('pbn-y').onclick=async function(){await pushOn();pushState()};
+$('pbn-n').onclick=function(){try{localStorage.setItem('b24pn','1')}catch(x){}$('pbn').style.display='none'};
+function goDeep(){var g=new URLSearchParams(location.search).get('go');if(!g)return;history.replaceState(null,'',location.pathname);
+  if(g==='notes')show('v-notes');else if(g==='results'){var s=services.find(function(x){return x.builtin_key==='results'});openResults(s?s.title:'النتائج')}}
 var CRED='<div class="cred"><div class="cr"><span class="pic a"></span><span><small>مصمم الهوية</small>Alam Fathi</span></div><div class="cr"><span class="pic d"></span><span><small>مطور البرنامج</small>Sou Wiz</span></div><div class="yr">2026</div></div>';
 var theNum='',me=null,user=null,services=[],unread=0;
 $('b-num').onclick=async function(){var b=this,n=norm($('num').value);msg('m-num','');
@@ -266,7 +295,7 @@ async function enter(){
   if(me.must_change_password)return show('v-chpw');home()}
 async function home(){
   var s=await sb.from('services').select('*').eq('is_active',true).order('sort_order');services=s.data||[];
-  await countUnread();render('');show('v-home');checkFlags()}
+  await countUnread();render('');show('v-home');checkFlags();pushState();goDeep()}
 async function countUnread(){
   var a=await sb.from('notifications').select('id'),b=await sb.from('notification_reads').select('notification_id'),seen={};
   (b.data||[]).forEach(function(x){seen[x.notification_id]=1});unread=(a.data||[]).filter(function(x){return !seen[x.id]}).length;
@@ -305,7 +334,7 @@ async function gallery(x){sub(x.title,'<p class="empty">جارٍ التحميل.
   $('sub-b').innerHTML='<div class="gal">'+((r.data||[]).map(function(u){return u.signedUrl?'<a href="'+esc(u.signedUrl)+'" target="_blank" rel="noopener"><img src="'+esc(u.signedUrl)+'" alt=""></a>':''}).join('')||'<p class="empty">تعذّر تحميل الصور</p>')+'</div>'}
 function fillAcc(){$('a-name').textContent=me.full_name||'—';$('a-num').textContent=me.student_number;$('a-mail').textContent=user.email}
 $('about').onclick=function(){sub('عن التطبيق','<div class="note"><b>B24 Portal – خدمات دفعة 24</b><p>تطبيق خدمات الطلاب لكلية الهندسة، جامعة وادي النيل.\n\nالنسخة 1.2</p></div>'+CRED)};
-async function out(){await sb.auth.signOut();me=null;user=null}
+async function out(){try{var s=await pushSub();if(s)await sb.from('push_subscriptions').delete().eq('endpoint',s.endpoint)}catch(x){}await sb.auth.signOut();me=null;user=null}
 $('logout').onclick=$('b-out2').onclick=async function(){await out();show('v-login')};
 $('menu').onclick=function(){document.body.classList.add('open')};$('scrim').onclick=function(){document.body.classList.remove('open')};
 var dip=null,std=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;

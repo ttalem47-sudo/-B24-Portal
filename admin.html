@@ -66,7 +66,7 @@ h3.t{font-size:16px;margin:18px 0 8px}
 </div>
 
 <div id="app" class="p">
-  <header class="top"><a class="ib" href="index.html" aria-label="رجوع"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></a><h1>لوحة الإدارة</h1><span class="role">مدير</span></header>
+  <header class="top"><a class="ib" href="index.html" aria-label="رجوع"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></a><h1>لوحة الإدارة</h1><span class="role" id="role">مدير</span></header>
   <div class="chips" id="chips" role="tablist"></div>
   <main>
   <p class="msg" id="gm"></p>
@@ -124,6 +124,14 @@ h3.t{font-size:16px;margin:18px 0 8px}
       <span class="lab">مدة الظهور</span><select class="in" id="ud"><option value="1">ساعة</option><option value="6">6 ساعات</option><option value="24" selected>يوم</option><option value="72">3 أيام</option><option value="0">حتى أوقفه</option></select>
       <div class="acts"><button class="btn" id="up">نشر</button><button class="btn out" id="ux">إيقاف</button></div></div>
   </section>
+  <section class="p" id="s7">
+    <div class="card"><h3 id="stf-h">تعيين مشرف</h3>
+      <input class="in l" id="stf-n" inputmode="numeric" placeholder="الرقم الجامعي للطالب المسجّل">
+      <span class="lab">الصلاحيات</span><div class="chk" id="stf-p"></div>
+      <div class="acts"><button class="btn" id="stf-s">حفظ</button><button class="btn out" id="stf-x">إلغاء</button></div>
+      <p class="msg" id="stf-m"></p></div>
+    <div id="stf-l"></div>
+  </section>
   </main>
   <div style="padding:8px 20px 0"><button class="btn out full" id="out">تسجيل الخروج</button></div>
 </div></div>
@@ -138,32 +146,52 @@ function norm(s){return String(s==null?'':s).replace(/[٠-٩]/g,function(d){retu
 function dt(s){return s?new Date(s).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}):''}
 function pane(id){['login','app'].forEach(function(x){$(x).classList.toggle('on',x===id)})}
 function err(r){if(r&&r.error){alert('فشل: '+r.error.message);return true}}
-var IC={u:'<path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 5 17.5V19M10.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>',h:'<path d="M8 4v16M16 4v16M4 8h16M4 16h16"/>',k:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',g:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',b:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15ZM10 21h4"/>',r:'<circle cx="12" cy="9" r="5.5"/><path d="m9 13.5-1.5 6.5 4.5-2.5 4.5 2.5-1.5-6.5"/>',ed:'<path d="M4 20h4L19 9l-4-4L4 16ZM13.5 6.5l4 4"/>',tr:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',w:'<path d="M12 4 3 19.5h18ZM12 10v4M12 17v.01"/>',s:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
+var IC={m:'<path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6Z"/><path d="m9 12 2 2 4-4"/>',u:'<path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 5 17.5V19M10.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>',h:'<path d="M8 4v16M16 4v16M4 8h16M4 16h16"/>',k:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',g:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',b:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15ZM10 21h4"/>',r:'<circle cx="12" cy="9" r="5.5"/><path d="m9 13.5-1.5 6.5 4.5-2.5 4.5 2.5-1.5-6.5"/>',ed:'<path d="M4 20h4L19 9l-4-4L4 16ZM13.5 6.5l4 4"/>',tr:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',w:'<path d="M12 4 3 19.5h18ZM12 10v4M12 17v.01"/>',s:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 function ico(k,st){return '<svg viewBox="0 0 24 24"'+(st?' style="'+st+'"':'')+'>'+IC[k]+'</svg>'}
 var P=[],N=[],R=[],S=[],T=[],RS=[],editId=null,cur=0,B=null;
-var TABS=[['الطلاب','u'],['الأرقام الجامعية','h'],['طلبات كلمة السر','k'],['الخدمات','g'],['الإشعارات','b'],['النتائج','r'],['التحكم','s']];
-function tabs(){$('chips').innerHTML=TABS.map(function(t,i){return '<button class="chip'+(i===cur?' on':'')+'" role="tab" data-i="'+i+'">'+ico(t[1])+t[0]+(i===2&&R.length?'<i>'+R.length+'</i>':'')+'</button>'}).join('')}
-$('chips').onclick=function(e){var b=e.target.closest('.chip');if(!b)return;cur=+b.dataset.i;tabs();for(var k=0;k<7;k++)$('s'+k).classList.toggle('on',k===cur)};
+var TABS=[['الطلاب','u','students'],['الأرقام الجامعية','h','numbers'],['طلبات كلمة السر','k','passwords'],['الخدمات','g','services'],['الإشعارات','b','notifications'],['النتائج','r','results'],['التحكم','s','control'],['المشرفون','m','staff']];
+var ROLE='',PERMS=[],SF=[];function can(k){return ROLE==='admin'||PERMS.indexOf(k)>-1}
+function showSec(){for(var k=0;k<8;k++)$('s'+k).classList.toggle('on',k===cur)}
+function tabs(){$('chips').innerHTML=TABS.map(function(t,i){return can(t[2])?'<button class="chip'+(i===cur?' on':'')+'" role="tab" data-i="'+i+'">'+ico(t[1])+t[0]+(i===2&&R.length?'<i>'+R.length+'</i>':'')+'</button>':''}).join('')}
+$('chips').onclick=function(e){var b=e.target.closest('.chip');if(!b)return;cur=+b.dataset.i;tabs();showSec()};
 
+var PLAB={results:'النتائج',notifications:'الإشعارات',services:'الخدمات',numbers:'الأرقام الجامعية',passwords:'طلبات كلمة السر'};
+function stfBoxes(){$('stf-p').innerHTML=Object.keys(PLAB).map(function(k){return '<label><input type="checkbox" data-pm="'+k+'">'+PLAB[k]+'</label>'}).join('')}
+function stfReset(){$('stf-n').value='';$('stf-h').textContent='تعيين مشرف';document.querySelectorAll('[data-pm]').forEach(function(c){c.checked=false})}
 async function start(){
   var u=(await sb.auth.getUser()).data.user;if(!u)return pane('login');
-  var p=(await sb.from('profiles').select('role').eq('id',u.id).single()).data;
-  if(!p||p.role!=='admin'){await sb.auth.signOut();pane('login');$('lm').textContent='هذا الحساب ليس أدمن';return}
-  pane('app');load();
+  var q=await sb.from('profiles').select('role,perms').eq('id',u.id).single();if(q.error)q=await sb.from('profiles').select('role').eq('id',u.id).single();var p=q.data;
+  if(!p||(p.role!=='admin'&&p.role!=='supervisor')){await sb.auth.signOut();pane('login');$('lm').textContent='هذا الحساب ليس له صلاحية إدارة';return}
+  ROLE=p.role;PERMS=p.perms||[];$('role').textContent=ROLE==='admin'?'مدير':'مشرف';
+  cur=TABS.findIndex(function(t){return can(t[2])});
+  if(cur<0){await sb.auth.signOut();pane('login');$('lm').textContent='لم تُمنح أي صلاحية بعد. تواصل مع المدير.';return}
+  stfBoxes();pane('app');showSec();load();
 }
 async function load(){
-  var a=await sb.rpc('admin_list_students');P=a.data||[];
-  $('gm').textContent=a.error?'شغّل ملف b24_admin_functions.sql في SQL Editor أولاً ('+a.error.message+')':'';
-  N=(await sb.from('student_numbers').select('*').order('created_at',{ascending:false}).limit(1000)).data||[];
-  R=(await sb.from('password_requests').select('*,profiles(full_name,student_number,whatsapp)').eq('status','pending').order('created_at',{ascending:false})).data||[];
-  S=(await sb.from('services').select('*').order('sort_order')).data||[];
-  T=(await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50)).data||[];
-  RS=(await sb.from('results').select('*').order('created_at',{ascending:false})).data||[];
-  ST={};((await sb.from('app_settings').select('*')).data||[]).forEach(function(x){ST[x.key]=x.value});
+  if(can('students')){var a=await sb.rpc('admin_list_students');P=a.data||[];$('gm').textContent=a.error?'شغّل ملف b24_admin_functions.sql في SQL Editor أولاً ('+a.error.message+')':''}else{P=[];$('gm').textContent=''}
+  N=can('numbers')?((await sb.from('student_numbers').select('*').order('created_at',{ascending:false}).limit(1000)).data||[]):[];
+  R=can('passwords')?((await sb.from('password_requests').select('*,profiles(full_name,student_number,whatsapp)').eq('status','pending').order('created_at',{ascending:false})).data||[]):[];
+  S=can('services')?((await sb.from('services').select('*').order('sort_order')).data||[]):[];
+  T=can('notifications')?((await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50)).data||[]):[];
+  RS=can('results')?((await sb.from('results').select('*').order('created_at',{ascending:false})).data||[]):[];
+  ST={};if(can('control'))((await sb.from('app_settings').select('*')).data||[]).forEach(function(x){ST[x.key]=x.value});
+  SF=can('staff')?((await sb.from('profiles').select('id,student_number,full_name,role,perms').eq('role','supervisor')).data||[]):[];
   $('c1').textContent=P.length;$('c2').textContent=P.filter(function(x){return x.is_blocked}).length;
   $('n1').textContent=N.length;$('n2').textContent=N.filter(function(x){return x.claimed_by}).length;
-  tabs();r1();r2();r3();r4();r5();r6();r7();
+  tabs();r1();r2();r3();r4();r5();r6();if(can('control'))r7();rstf();
 }
+function rstf(){$('stf-l').innerHTML=SF.map(function(x){return '<div class="item"><div class="av">'+esc((x.full_name||'م').charAt(0))+'</div><div class="it"><b>'+esc(x.full_name||'بدون اسم')+'</b><small class="ltr">'+esc(x.student_number)+'</small><small>'+(x.perms||[]).map(function(k){return PLAB[k]||k}).join(' · ')+'</small></div><button class="btn sm out" data-se="'+x.id+'">تعديل</button><button class="btn sm dng" data-sr="'+x.id+'">إزالة</button></div>'}).join('')||'<p class="msg">لا يوجد مشرفون بعد</p>'}
+$('stf-s').onclick=async function(){var m=$('stf-m');m.className='msg';m.textContent='';var n=norm($('stf-n').value),u=P.find(function(x){return x.student_number===n});
+  if(!u){m.textContent='لا يوجد حساب مسجّل بهذا الرقم. يجب أن يسجّل الطالب في التطبيق أولاً.';return}
+  if(u.role==='admin'){m.textContent='هذا الحساب مدير.';return}
+  var perms=[].slice.call(document.querySelectorAll('[data-pm]:checked')).map(function(c){return c.dataset.pm});
+  if(!perms.length){m.textContent='اختر صلاحية واحدة على الأقل.';return}
+  if(err(await sb.from('profiles').update({role:'supervisor',perms:perms}).eq('id',u.id)))return;
+  stfReset();m.className='msg ok';m.textContent='تم تعيين '+(u.full_name||u.student_number)+' مشرفاً.';load()};
+$('stf-x').onclick=function(){stfReset();$('stf-m').textContent=''};
+$('stf-l').onclick=async function(e){var b=e.target.closest('button');if(!b)return;var d=b.dataset,x;
+  if(d.se){x=SF.find(function(s){return s.id===d.se});$('stf-n').value=x.student_number;document.querySelectorAll('[data-pm]').forEach(function(c){c.checked=(x.perms||[]).indexOf(c.dataset.pm)>-1});$('stf-h').textContent='تعديل صلاحيات: '+(x.full_name||x.student_number);window.scrollTo(0,0)}
+  if(d.sr){x=SF.find(function(s){return s.id===d.sr});if(!confirm('إزالة صلاحيات المشرف عن '+(x.full_name||x.student_number)+'؟'))return;err(await sb.from('profiles').update({role:'student',perms:[]}).eq('id',d.sr));load()}};
 function r1(){var q=$('q1').value.trim(),nq=norm(q);
   $('l1').innerHTML=P.filter(function(x){return !q||(x.full_name||'').indexOf(q)>-1||x.student_number.indexOf(nq)>-1||(x.email||'').toLowerCase().indexOf(q.toLowerCase())>-1}).map(function(x){var nm=x.full_name||'بدون اسم';
     return '<div class="item"><div class="av">'+esc(nm.charAt(0))+'</div><div class="it"><b>'+esc(nm)+(x.role==='admin'?' · أدمن':'')+(x.is_blocked?' <span class="tag no">محظور</span>':'')+'</b><small class="ltr">'+esc(x.student_number)+' · '+esc(x.email)+'</small><small>سجّل '+dt(x.created_at)+'</small></div>'+

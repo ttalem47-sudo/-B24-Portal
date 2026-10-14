@@ -303,7 +303,7 @@ async function enter(){
   if(me.is_blocked){await out();show('v-login');return msg('m-login','هذا الحساب موقوف. تواصل مع الإدارة')}
   var nm=me.full_name||'طالب B24';
   $('hname').textContent=nm;$('dname').textContent=nm;$('dnum').textContent=me.student_number;$('dav').textContent=nm.charAt(0);
-  $('adm').style.display=me.role==='admin'?'flex':'none';
+  $('adm').style.display=(me.role==='admin'||me.role==='supervisor')?'flex':'none';
   if(me.must_change_password)return show('v-chpw');home()}
 async function home(){
   var s=await sb.from('services').select('*').eq('is_active',true).order('sort_order');services=s.data||[];
@@ -394,4 +394,3 @@ sb.auth.getSession().then(function(r){if(r.data.session)enter()});
 </script>
 </body>
 </html>
- 

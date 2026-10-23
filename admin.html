@@ -136,6 +136,16 @@ h3.t{font-size:16px;margin:18px 0 8px}
       <input class="in" id="ut" placeholder="العنوان"><textarea class="in" id="ub" placeholder="نص الإشعار العاجل"></textarea>
       <span class="lab">مدة الظهور</span><select class="in" id="ud"><option value="1">ساعة</option><option value="6">6 ساعات</option><option value="24" selected>يوم</option><option value="72">3 أيام</option><option value="0">حتى أوقفه</option></select>
       <div class="acts"><button class="btn" id="up">نشر</button><button class="btn out" id="ux">إيقاف</button></div></div>
+    <div class="card"><h3>شوبيتو (الروبوت المساعد)</h3>
+      <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">أضف أسئلة وأجوبة إضافية يعرفها الروبوت. سطر لكل سؤال بالشكل: السؤال | الجواب | كلمات مفتاحية (اختياري). والروبوت يبحث تلقائياً في الخدمات التي تضيفها.</small>
+      <textarea class="in" id="bf" style="height:150px" placeholder="كيف أتواصل مع الإدارة؟ | راسلنا على الرقم ... | تواصل ادارة واتساب"></textarea>
+      <button class="btn full" id="bfs">حفظ</button></div>
+    <div class="card"><h3>النقاط والمكافآت</h3>
+      <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">الطالب يربح 5 نقاط بدخوله كل يوم و10 إضافية كل 7 أيام متتالية، وعند 50 نقطة تُفتح السمة الفضية وعند 100 الذهبية. امنح هنا نقاطاً لمن شارك في فعالية أو استبيان، والرقم السالب يخصم.</small>
+      <textarea class="in l" id="pn" placeholder="الأرقام الجامعية، رقم في كل سطر" style="height:96px"></textarea>
+      <div class="add"><input class="in l" id="pa" type="number" placeholder="النقاط"><input class="in" id="pr" placeholder="السبب (اختياري)"></div>
+      <button class="btn full" id="pb">منح النقاط</button>
+      <h3 class="t">الأعلى نقاطاً</h3><div id="ptop"></div></div>
   </section>
   <section class="p" id="s7">
     <div class="card"><h3 id="stf-h">تعيين مشرف</h3>
@@ -201,7 +211,7 @@ async function load(){
   SF=can('staff')?((await sb.from('profiles').select('id,student_number,full_name,role,perms').eq('role','supervisor')).data||[]):[];
   $('c1').textContent=P.length;$('c2').textContent=P.filter(function(x){return x.is_blocked}).length;
   $('n1').textContent=N.length;$('n2').textContent=N.filter(function(x){return x.claimed_by}).length;
-  tabs();r1();r2();r3();r4();r5();r6();if(can('control'))r7();rstf();
+  tabs();r1();r2();r3();r4();r5();r6();if(can('control')){r7();rbot()}rstf();
 }
 function rstf(){$('stf-l').innerHTML=SF.map(function(x){return '<div class="item"><div class="av">'+esc((x.full_name||'م').charAt(0))+'</div><div class="it"><b>'+esc(x.full_name||'بدون اسم')+'</b><small class="ltr">'+esc(x.student_number)+'</small><small>'+(x.perms||[]).map(function(k){return PLAB[k]||k}).join(' · ')+'</small></div><button class="btn sm out" data-se="'+x.id+'">تعديل</button><button class="btn sm dng" data-sr="'+x.id+'">إزالة</button></div>'}).join('')||'<p class="msg">لا يوجد مشرفون بعد</p>'}
 $('stf-s').onclick=async function(){var m=$('stf-m');m.className='msg';m.textContent='';var n=norm($('stf-n').value),u=P.find(function(x){return x.student_number===n});
@@ -344,6 +354,19 @@ $('up').onclick=async function(){var t=$('ut').value.trim(),b=$('ub').value.trim
   var h=+$('ud').value;if(!await ask('إشعار عاجل','سيظهر الإشعار العاجل لكل الطلاب. هل تريد النشر؟','نشر'))return;
   if(await setS('urgent',{on:true,id:crypto.randomUUID(),title:t,body:b,expires_at:h?new Date(Date.now()+h*3600000).toISOString():null})){$('ut').value='';$('ub').value='';toast('تم نشر الإشعار العاجل','ok')}};
 $('ux').onclick=async function(){if(await setS('urgent',{on:false}))toast('تم إيقاف الإشعار العاجل','ok')};
+function rbot(){var f=ST.bot_faq;if(document.activeElement!==$('bf'))$('bf').value=(Array.isArray(f)?f:[]).map(function(x){return [x.q,x.a,x.k].filter(function(v,i){return i<2||v}).join(' | ')}).join('\n');
+  sb.from('profiles').select('student_number,full_name,points').order('points',{ascending:false}).limit(10).then(function(r){if(r.error||!r.data)return;
+    var d=r.data.filter(function(x){return x.points>0});
+    $('ptop').innerHTML=d.map(function(x){var nm=x.full_name||'بدون اسم';return '<div class="item"><div class="av">'+esc(nm.charAt(0))+'</div><div class="it"><b>'+esc(nm)+'</b><small class="ltr">'+esc(x.student_number)+'</small></div><span class="tag ok">'+x.points+' نقطة</span></div>'}).join('')||'<small style="color:#5B6B80">لا توجد نقاط بعد.</small>'})}
+$('bfs').onclick=async function(){var arr=$('bf').value.split('\n').map(function(l){var p=l.split('|').map(function(x){return x.trim()});return p[0]&&p[1]?{q:p[0],a:p[1],k:p[2]||''}:null}).filter(Boolean);
+  if(await setS('bot_faq',arr))toast('تم حفظ أسئلة الروبوت ('+arr.length+')','ok')};
+$('pb').onclick=async function(){var nums=$('pn').value.split(/[\s,;،]+/).map(norm).filter(function(x){return /^\d+$/.test(x)}),a=parseInt($('pa').value);
+  if(!nums.length){toast('اكتب رقماً جامعياً واحداً على الأقل','err');return}
+  if(!a||Math.abs(a)>1000){toast('اكتب عدد النقاط (بين -1000 و1000)','err');return}
+  if(!await ask('منح نقاط',(a>0?'منح ':'خصم ')+Math.abs(a)+' نقطة لعدد '+nums.length+' رقم؟','تأكيد',a<0))return;
+  var r=await sb.rpc('admin_award_points_bulk',{p_numbers:nums,p_amount:a,p_reason:$('pr').value.trim()||null});if(err(r))return;
+  toast('تم تحديث نقاط '+r.data+' طالب','ok');$('pn').value='';$('pr').value='';rbot()};
+
 $('lb').onclick=async function(){$('lm').textContent='';var r=await sb.auth.signInWithPassword({email:$('e').value.trim(),password:$('pw').value});
   if(r.error)return $('lm').textContent='الإيميل أو كلمة السر غير صحيحة';start()};
 $('out').onclick=async function(){await sb.auth.signOut();pane('login')};

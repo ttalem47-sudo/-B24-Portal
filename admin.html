@@ -146,6 +146,23 @@ h3.t{font-size:16px;margin:18px 0 8px}
       <div class="add"><input class="in l" id="pa" type="number" placeholder="النقاط"><input class="in" id="pr" placeholder="السبب (اختياري)"></div>
       <button class="btn full" id="pb">منح النقاط</button>
       <h3 class="t">الأعلى نقاطاً</h3><div id="ptop"></div></div>
+    <div class="card"><h3>متجر الشخصيات</h3>
+      <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">غيّر سعر كل شخصية بالنقاط، أو أخفِها من المتجر بالزر على اليسار. السعر يُخصم من رصيد الطالب، ولا يؤثر على مستواه أو ألوانه المفتوحة. من اشترى شخصية يحتفظ بها حتى لو أخفيتها.</small>
+      <div id="chs"></div>
+      <button class="btn full" id="chsave" style="margin-top:6px">حفظ الأسعار</button></div>
+    <div class="card"><h3>نافذة المتصدرين (الصفحة الرئيسية)</h3>
+      <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">تظهر أعلى الصفحة الرئيسية وترتّب الطلاب بمجموع النقاط التي جمعوها.</small>
+      <div class="h" style="margin-bottom:10px"><b>إظهار النافذة</b><button class="sw" id="bd-on" aria-label="تفعيل"></button></div>
+      <span class="lab">ماذا تعرض النافذة؟</span><select class="in" id="bd-k"><option value="top">ترتيب المتصدرين</option><option value="custom">محتوى مخصص (نص / صورة / رابط)</option></select>
+      <span class="lab">عدد المراتب</span><select class="in" id="bd-n"><option value="3">3</option><option value="5">5</option><option value="10">10</option></select>
+      <span class="lab">العنوان</span><input class="in" id="bd-t" placeholder="أبطال النقاط">
+      <span class="lab">السطر الفرعي</span><input class="in" id="bd-s" placeholder="أعلى الطلاب جمعاً للنقاط">
+      <span class="lab">نص المحتوى المخصص</span><textarea class="in" id="bd-x" rows="3" placeholder="يظهر فقط في وضع المحتوى المخصص"></textarea>
+      <span class="lab">رابط الزر (اختياري)</span><input class="in" id="bd-l" dir="ltr" placeholder="https://..."><span class="lab">نص الزر</span><input class="in" id="bd-b" placeholder="اعرف المزيد">
+      <span class="lab">عرض الأسماء</span><select class="in" id="bd-m"><option value="full">الاسم كاملاً</option><option value="first">الاسم الأول فقط</option><option value="hidden">إخفاء الأسماء</option></select>
+      <label class="drop" style="padding:12px"><b>صورة للنافذة (اختياري)</b><small>تظهر كخلفية لعنوان النافذة</small><input type="file" id="bd-f" accept="image/*"></label>
+      <div id="bd-p"></div>
+      <button class="btn full" id="bd-save">حفظ</button></div>
   </section>
   <section class="p" id="s7">
     <div class="card"><h3 id="stf-h">تعيين مشرف</h3>
@@ -211,7 +228,7 @@ async function load(){
   SF=can('staff')?((await sb.from('profiles').select('id,student_number,full_name,role,perms').eq('role','supervisor')).data||[]):[];
   $('c1').textContent=P.length;$('c2').textContent=P.filter(function(x){return x.is_blocked}).length;
   $('n1').textContent=N.length;$('n2').textContent=N.filter(function(x){return x.claimed_by}).length;
-  tabs();r1();r2();r3();r4();r5();r6();if(can('control')){r7();rbot()}rstf();
+  tabs();r1();r2();r3();r4();r5();r6();if(can('control')){r7();rbot();rch();rbd()}rstf();
 }
 function rstf(){$('stf-l').innerHTML=SF.map(function(x){return '<div class="item"><div class="av">'+esc((x.full_name||'م').charAt(0))+'</div><div class="it"><b>'+esc(x.full_name||'بدون اسم')+'</b><small class="ltr">'+esc(x.student_number)+'</small><small>'+(x.perms||[]).map(function(k){return PLAB[k]||k}).join(' · ')+'</small></div><button class="btn sm out" data-se="'+x.id+'">تعديل</button><button class="btn sm dng" data-sr="'+x.id+'">إزالة</button></div>'}).join('')||'<p class="msg">لا يوجد مشرفون بعد</p>'}
 $('stf-s').onclick=async function(){var m=$('stf-m');m.className='msg';m.textContent='';var n=norm($('stf-n').value),u=P.find(function(x){return x.student_number===n});
@@ -366,6 +383,30 @@ $('pb').onclick=async function(){var nums=$('pn').value.split(/[\s,;،]+/).map(n
   if(!await ask('منح نقاط',(a>0?'منح ':'خصم ')+Math.abs(a)+' نقطة لعدد '+nums.length+' رقم؟','تأكيد',a<0))return;
   var r=await sb.rpc('admin_award_points_bulk',{p_numbers:nums,p_amount:a,p_reason:$('pr').value.trim()||null});if(err(r))return;
   toast('تم تحديث نقاط '+r.data+' طالب','ok');$('pn').value='';$('pr').value='';rbot()};
+
+/* ---- v1.3 : shop + top-board controls ---- */
+var CHS=[['streetgirl','سورا',300],['maid','ليليان',600],['sorcerer','غوجو',1200],['king','سوكونا',2400],['player','ديبي',4800],['samurai','زورو',9600]];
+async function setKey(key,val){var r=await sb.rpc('admin_set_setting',{p_key:key,p_value:val});
+  if(r.error){var m=r.error.message||'';toast('فشل: '+(/FORBIDDEN/.test(m)?'للمدير فقط':/function|schema cache|find/i.test(m)?'شغّل ملف b24_shop_board.sql في Supabase أولاً':m),'err');return false}ST[key]=val;return true}
+function rch(){var c=ST.char_cfg||{};$('chs').innerHTML=CHS.map(function(x){var v=c[x[0]]||{},on=v.on!==false,pr=v.price!=null?v.price:x[2];
+  return '<div class="item"><div class="it"><b>'+esc(x[1])+'</b><small>السعر الافتراضي '+x[2]+' نقطة</small></div><input class="in l" type="number" min="1" style="width:92px;margin:0" data-cp="'+x[0]+'" value="'+esc(pr)+'" aria-label="السعر"><button class="sw'+(on?' on':'')+'" data-co="'+x[0]+'" aria-label="إظهار في المتجر"></button></div>'}).join('')}
+$('chs').onclick=function(e){var b=e.target.closest('[data-co]');if(b)b.classList.toggle('on')};
+$('chsave').onclick=async function(){var o={},bad=0;
+  document.querySelectorAll('[data-cp]').forEach(function(i){var id=i.dataset.cp,p=parseInt(i.value),sw=document.querySelector('[data-co="'+id+'"]');if(!(p>=1&&p<=1000000))bad=1;o[id]={price:p,on:sw.classList.contains('on')}});
+  if(bad){toast('اكتب سعراً صحيحاً لكل شخصية','err');return}
+  if(await setKey('char_cfg',o))toast('تم حفظ أسعار الشخصيات','ok')};
+var BDI='',BDF=null;
+function rbd(){var b=ST.board||{};$('bd-on').classList.toggle('on',b.on!==false);$('bd-n').value=String(b.count||10);$('bd-t').value=b.title||'';$('bd-s').value=b.sub||'';$('bd-m').value=b.names||'full';$('bd-k').value=b.mode||'top';$('bd-x').value=b.text||'';$('bd-l').value=b.link||'';$('bd-b').value=b.btn||'';BDI=b.image||'';BDF=null;bdp()}
+function bdp(){$('bd-p').innerHTML=(BDF||BDI)?'<div class="item" style="padding:8px 0"><img src="'+esc(BDF?URL.createObjectURL(BDF):pubU(BDI))+'" alt="" style="width:96px;height:56px;object-fit:cover;border-radius:10px;border:1px solid #D9E1EA;flex:none"><div class="it"><b>صورة النافذة</b></div><button class="btn sm dng" id="bd-rm">حذف الصورة</button></div>':''}
+$('bd-on').onclick=function(){this.classList.toggle('on')};
+$('bd-f').onchange=function(){BDF=this.files[0]||null;this.value='';bdp()};
+$('bd-p').onclick=function(e){if(e.target.id==='bd-rm'){BDF=null;BDI='';bdp()}};
+$('bd-save').onclick=async function(){var btn=this,old=(ST.board||{}).image||'',img=BDI;btn.disabled=true;
+  try{if(BDF){var bl=await shrink(BDF),p='board/'+Date.now()+'.jpg',u=await sb.storage.from('service-images').upload(p,bl,{contentType:'image/jpeg'});if(u.error)throw u.error;img=p}}
+  catch(x){btn.disabled=false;toast('فشل رفع الصورة: '+(x.message||x),'err');return}
+  var o={on:$('bd-on').classList.contains('on'),count:+$('bd-n').value,title:$('bd-t').value.trim(),sub:$('bd-s').value.trim(),names:$('bd-m').value,mode:$('bd-k').value,text:$('bd-x').value.trim(),link:$('bd-l').value.trim(),btn:$('bd-b').value.trim(),image:img||''};
+  var ok=await setKey('board',o);btn.disabled=false;if(!ok)return;
+  if(old&&old!==o.image)sb.storage.from('service-images').remove([old]);rbd();toast('تم حفظ إعدادات النافذة','ok')};
 
 $('lb').onclick=async function(){$('lm').textContent='';var r=await sb.auth.signInWithPassword({email:$('e').value.trim(),password:$('pw').value});
   if(r.error)return $('lm').textContent='الإيميل أو كلمة السر غير صحيحة';start()};

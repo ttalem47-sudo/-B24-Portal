@@ -156,6 +156,12 @@ h3.t{font-size:16px;margin:18px 0 8px}
       <input class="in l" id="gr-n" inputmode="numeric" placeholder="الرقم الجامعي للطالب"><select class="in" id="gr-c"></select>
       <div class="acts"><button class="btn" id="gr-go">منح</button><button class="btn out" id="gr-rm">سحب</button></div>
       <h3 class="t">من يملكها الآن</h3><div id="gr-l"></div></div>
+    <div class="card"><h3>الدردشة الذكية (Gemini)</h3>
+      <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">تتيح للطلاب التحدث مع شخصياتهم بذكاء اصطناعي. تُخصم النقاط من رصيد الطالب عن كل رسالة. اجعل السعر 0 لتكون مجانية. تتطلب نشر دالة b24-ai ومفتاح Gemini (راجع الشرح المرفق).</small>
+      <div class="item"><div class="it"><b>تفعيل الدردشة الذكية</b></div><button class="sw" id="ai-on" aria-label="تفعيل"></button></div>
+      <span class="lab">سعر الرسالة الواحدة (نقاط)</span><input class="in l" id="ai-p" type="number" min="0" max="1000" inputmode="numeric">
+      <span class="lab">الحد الأقصى للرسائل يومياً لكل طالب</span><input class="in l" id="ai-l" type="number" min="1" max="500" inputmode="numeric">
+      <button class="btn full" id="ai-s" style="margin-top:6px">حفظ</button></div>
     <div class="card"><h3>نافذة المتصدرين (الصفحة الرئيسية)</h3>
       <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">تظهر أعلى الصفحة الرئيسية وترتّب الطلاب بمجموع النقاط التي جمعوها.</small>
       <div class="h" style="margin-bottom:10px"><b>إظهار النافذة</b><button class="sw" id="bd-on" aria-label="تفعيل"></button></div>
@@ -401,7 +407,7 @@ async function setKey(key,val){var r=await sb.rpc('admin_set_setting',{p_key:key
   if(r.error){var m=r.error.message||'';toast('فشل: '+(/FORBIDDEN/.test(m)?'للمدير فقط':/function|schema cache|find/i.test(m)?'شغّل ملف b24_shop_board.sql في Supabase أولاً':m),'err');return false}ST[key]=val;return true}
 function rch(){var c=ST.char_cfg||{};$('chs').innerHTML=CHS.map(function(x){var v=c[x[0]]||{},on=v.on!==false,pr=v.price!=null?v.price:x[2];
   return '<div class="item"><div class="it"><input class="in" style="margin:0" data-cn="'+x[0]+'" value="'+esc(v.name||x[1])+'" aria-label="الاسم"><small>الافتراضي '+x[2]+' نقطة'+(CHNEW.indexOf(x[0])>-1?' · جديدة':'')+'</small></div><input class="in l" type="number" min="1" style="width:84px;margin:0" data-cp="'+x[0]+'" value="'+esc(pr)+'" aria-label="السعر"><button class="sw'+(on?' on':'')+'" data-co="'+x[0]+'" aria-label="إظهار في المتجر"></button></div>'}).join('');
-  $('gr-c').innerHTML=CHS.filter(function(x){return CHNEW.indexOf(x[0])>-1}).map(function(x){return '<option value="'+x[0]+'">'+esc((c[x[0]]||{}).name||x[1])+'</option>'}).join('');loadGr()}
+  $('gr-c').innerHTML=CHS.filter(function(x){return CHNEW.indexOf(x[0])>-1}).map(function(x){return '<option value="'+x[0]+'">'+esc((c[x[0]]||{}).name||x[1])+'</option>'}).join('');loadGr();rai()}
 $('chs').onclick=function(e){var b=e.target.closest('[data-co]');if(b)b.classList.toggle('on')};
 $('chsave').onclick=async function(){var o={},bad=0;
   document.querySelectorAll('[data-cp]').forEach(function(i){var id=i.dataset.cp,p=parseInt(i.value),sw=document.querySelector('[data-co="'+id+'"]'),nm=document.querySelector('[data-cn="'+id+'"]').value.trim().slice(0,24),d=CHS.find(function(x){return x[0]===id});if(!(p>=1&&p<=1000000))bad=1;o[id]={price:p,on:sw.classList.contains('on')};if(nm&&nm!==d[1])o[id].name=nm});
@@ -415,6 +421,10 @@ async function grGo(give){var n=norm($('gr-n').value),c=$('gr-c').value;if(!n){t
   if(!give&&!await ask('سحب الشخصية','سيفقد الطالب '+n+' هذه الشخصية. هل تريد المتابعة؟','سحب',true))return;
   var r=await sb.rpc('admin_grant_char',{p_number:n,p_char:c,p_give:give});if(err(r))return;
   var s=r.data;if(s==='ok'){toast(give?'تم منح الشخصية':'تم سحب الشخصية','ok');if(give)$('gr-n').value='';loadGr()}else toast(s==='nouser'?'لا يوجد طالب بهذا الرقم':s==='forbidden'?'للمدير فقط':'تعذّر التنفيذ','err')}
+function rai(){var a=ST.ai_cfg||{};$('ai-on').classList.toggle('on',!!a.on);$('ai-p').value=a.price!=null?a.price:5;$('ai-l').value=a.limit||30}
+$('ai-on').onclick=function(){this.classList.toggle('on')};
+$('ai-s').onclick=async function(){var p=parseInt($('ai-p').value),l=parseInt($('ai-l').value),on=$('ai-on').classList.contains('on');if(!(p>=0&&p<=1000)||!(l>=1&&l<=500)){toast('تحقق من السعر والحد اليومي','err');return}
+  var r=await sb.rpc('admin_set_ai',{p_on:on,p_price:p,p_limit:l});if(err(r))return;if(r.data!=='ok'){toast('للمدير فقط، أو شغّل ملف b24_ai.sql','err');return}ST.ai_cfg={on:on,price:p,limit:l};toast('تم حفظ إعدادات الدردشة الذكية','ok')};
 $('gr-go').onclick=function(){grGo(true)};$('gr-rm').onclick=function(){grGo(false)};
 $('gr-l').onclick=async function(e){var b=e.target.closest('[data-gx]');if(!b)return;var g=GR[+b.dataset.gx];if(!g||!await ask('سحب الشخصية','سحب هذه الشخصية من '+(g.full_name||g.student_number)+'؟','سحب',true))return;
   var r=await sb.rpc('admin_grant_char',{p_number:g.student_number,p_char:g.char_id,p_give:false});if(!err(r)){toast('تم السحب','ok');loadGr()}};

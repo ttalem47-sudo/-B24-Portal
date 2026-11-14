@@ -68,6 +68,9 @@ h3.t{font-size:16px;margin:18px 0 8px}
 #dlg .in{margin-bottom:16px}#dlg .r{display:flex;gap:10px}#dlg .btn{flex:1}
 #dlg #dlg-y.dng{background:var(--err);color:#fff;border-color:var(--err)}
 .btn{transition:transform .12s,opacity .2s}.btn:active{transform:scale(.98)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--field);margin-bottom:10px}
+.seg button{height:40px;border-radius:9px;font-weight:500;color:var(--muted)}.seg button.on{background:var(--navy);color:#fff;font-weight:700}
+.seg button.neg.on{background:var(--err)}
 </style>
 </head>
 <body><div class="w">
@@ -144,9 +147,17 @@ h3.t{font-size:16px;margin:18px 0 8px}
     <div class="card"><h3>النقاط والمكافآت</h3>
       <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">الطالب يربح 5 نقاط بدخوله كل يوم و10 إضافية كل 7 أيام متتالية، وعند 50 نقطة تُفتح السمة الفضية وعند 100 الذهبية. امنح هنا نقاطاً لمن شارك في فعالية أو استبيان، والرقم السالب يخصم.</small>
       <textarea class="in l" id="pn" placeholder="الأرقام الجامعية، رقم في كل سطر" style="height:96px"></textarea>
-      <div class="add"><input class="in l" id="pa" type="number" placeholder="النقاط"><input class="in" id="pr" placeholder="السبب (اختياري)"></div>
+      <div class="seg" id="pm" role="tablist"><button class="on" data-m="1">منح نقاط</button><button data-m="-1">خصم نقاط</button></div>
+      <div class="add"><input class="in l" id="pa" type="number" min="1" max="1000" placeholder="عدد النقاط"><input class="in" id="pr" placeholder="السبب (اختياري)"></div>
       <button class="btn full" id="pb">منح النقاط</button>
       <h3 class="t">الأعلى نقاطاً</h3><div id="ptop"></div></div>
+    <div class="card"><h3>تحويل النقاط بين الطلاب</h3>
+      <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">الميزة مغلقة افتراضياً. عند فتحها يظهر للطالب زر «تحويل نقاط لزميل» في صفحة حسابه. النقاط المحوّلة تُخصم من رصيد المرسل (ومن مجموع نقاطه) وتُضاف للمستلم. يتطلب تشغيل ملف b24_transfer.sql مرة واحدة.</small>
+      <div class="h" style="margin-bottom:10px"><b>السماح بالتحويل</b><button class="sw" id="tr-on" aria-label="تفعيل"></button></div>
+      <span class="lab">أقصى عدد نقاط في التحويلة الواحدة</span><input class="in l" id="tr-m" type="number" min="1" max="10000" inputmode="numeric">
+      <span class="lab">أقصى ما يرسله الطالب خلال 24 ساعة</span><input class="in l" id="tr-d" type="number" min="1" max="100000" inputmode="numeric">
+      <button class="btn full" id="tr-s">حفظ</button>
+      <h3 class="t">آخر التحويلات</h3><div id="tr-l"></div></div>
     <div class="card"><h3>متجر الشخصيات</h3>
       <small style="color:#5B6B80;display:block;margin-bottom:10px;line-height:1.7">غيّر اسم وسعر كل شخصية بالنقاط، أو أخفِها من المتجر بالزر على اليسار. السعر يُخصم من رصيد الطالب، ولا يؤثر على مستواه أو ألوانه المفتوحة. من اشترى شخصية يحتفظ بها حتى لو أخفيتها.</small>
       <div id="chs"></div>
@@ -240,7 +251,7 @@ async function load(){
   SF=can('staff')?((await sb.from('profiles').select('id,student_number,full_name,role,perms').eq('role','supervisor')).data||[]):[];
   $('c1').textContent=P.length;$('c2').textContent=P.filter(function(x){return x.is_blocked}).length;
   $('n1').textContent=N.length;$('n2').textContent=N.filter(function(x){return x.claimed_by}).length;
-  tabs();r1();r2();r3();r4();r5();r6();if(can('control')){r7();rbot();rch();rbd()}rstf();
+  tabs();r1();r2();r3();r4();r5();r6();if(can('control')){r7();rbot();rch();rbd();rtr()}rstf();
 }
 function rstf(){$('stf-l').innerHTML=SF.map(function(x){return '<div class="item"><div class="av">'+esc((x.full_name||'م').charAt(0))+'</div><div class="it"><b>'+esc(x.full_name||'بدون اسم')+'</b><small class="ltr">'+esc(x.student_number)+'</small><small>'+(x.perms||[]).map(function(k){return PLAB[k]||k}).join(' · ')+'</small></div><button class="btn sm out" data-se="'+x.id+'">تعديل</button><button class="btn sm dng" data-sr="'+x.id+'">إزالة</button></div>'}).join('')||'<p class="msg">لا يوجد مشرفون بعد</p>'}
 $('stf-s').onclick=async function(){var m=$('stf-m');m.className='msg';m.textContent='';var n=norm($('stf-n').value),u=P.find(function(x){return x.student_number===n});
@@ -393,12 +404,37 @@ function rbot(){var f=ST.bot_faq;if(document.activeElement!==$('bf'))$('bf').val
     $('ptop').innerHTML=d.map(function(x){var nm=x.full_name||'بدون اسم';return '<div class="item"><div class="av">'+esc(nm.charAt(0))+'</div><div class="it"><b>'+esc(nm)+'</b><small class="ltr">'+esc(x.student_number)+'</small></div><span class="tag ok">'+x.points+' نقطة</span></div>'}).join('')||'<small style="color:#5B6B80">لا توجد نقاط بعد.</small>'})}
 $('bfs').onclick=async function(){var arr=$('bf').value.split('\n').map(function(l){var p=l.split('|').map(function(x){return x.trim()});return p[0]&&p[1]?{q:p[0],a:p[1],k:p[2]||''}:null}).filter(Boolean);
   if(await setS('bot_faq',arr))toast('تم حفظ أسئلة الروبوت ('+arr.length+')','ok')};
-$('pb').onclick=async function(){var nums=$('pn').value.split(/[\s,;،]+/).map(norm).filter(function(x){return /^\d+$/.test(x)}),a=parseInt($('pa').value);
+var PM=1;
+$('pm').onclick=function(e){var b=e.target.closest('button');if(!b)return;PM=+b.dataset.m;
+  [].slice.call(this.children).forEach(function(x){x.classList.toggle('on',x===b);x.classList.toggle('neg',+x.dataset.m<0)});
+  $('pb').textContent=PM>0?'منح النقاط':'خصم النقاط';$('pb').className='btn full'+(PM<0?' dng':'')};
+$('pb').onclick=async function(){var nums=$('pn').value.split(/[\s,;،]+/).map(norm).filter(function(x){return /^\d+$/.test(x)}),n=Math.abs(parseInt($('pa').value)),a=n*PM;
   if(!nums.length){toast('اكتب رقماً جامعياً واحداً على الأقل','err');return}
-  if(!a||Math.abs(a)>1000){toast('اكتب عدد النقاط (بين -1000 و1000)','err');return}
-  if(!await ask('منح نقاط',(a>0?'منح ':'خصم ')+Math.abs(a)+' نقطة لعدد '+nums.length+' رقم؟','تأكيد',a<0))return;
-  var r=await sb.rpc('admin_award_points_bulk',{p_numbers:nums,p_amount:a,p_reason:$('pr').value.trim()||null});if(err(r))return;
-  toast('تم تحديث نقاط '+r.data+' طالب','ok');$('pn').value='';$('pr').value='';rbot()};
+  if(!n||n>1000){toast('اكتب عدد النقاط (من 1 إلى 1000)','err');return}
+  if(!await ask(a>0?'منح نقاط':'خصم نقاط',(a>0?'منح ':'خصم ')+n+' نقطة '+(a>0?'لـ ':'من ')+nums.length+' رقم؟'+(a<0?'\nلن ينزل رصيد الطالب تحت الصفر، وقد ينخفض مستواه.':''),'تأكيد',a<0))return;
+  var reason=$('pr').value.trim()||null,r;
+  if(a>0){r=await sb.rpc('admin_award_points_bulk',{p_numbers:nums,p_amount:a,p_reason:reason});if(err(r))return;toast('تم تحديث نقاط '+r.data+' طالب','ok')}
+  else{r=await sb.rpc('admin_deduct_points_bulk',{p_numbers:nums,p_amount:n,p_reason:reason});
+    if(r.error){if(/function|schema cache|find/i.test(r.error.message||'')){toast('شغّل ملف b24_transfer.sql في Supabase أولاً','err')}else err(r);return}
+    var d=r.data||{};if(d.status==='forbidden'){toast('للمدير فقط','err');return}if(d.status!=='ok'){toast('تعذّر الخصم','err');return}
+    toast('تم الخصم من '+d.updated+' طالب'+((d.missing&&d.missing.length)?' · لم يُعثر على '+d.missing.length+' رقم':''),(d.missing&&d.missing.length)?'':'ok')}
+  $('pn').value='';$('pa').value='';$('pr').value='';rbot()};
+
+/* ---- points transfer ---- */
+var TRC=null;
+async function rtr(){var r=await sb.rpc('admin_get_transfers');
+  if(r.error||!r.data){TRC=null;$('tr-l').innerHTML='<p class="msg">شغّل ملف b24_transfer.sql في Supabase لتفعيل التحويل</p>';return}
+  TRC=r.data;$('tr-on').classList.toggle('on',!!TRC.on);
+  if(document.activeElement!==$('tr-m'))$('tr-m').value=TRC.max;if(document.activeElement!==$('tr-d'))$('tr-d').value=TRC.daily;
+  $('tr-l').innerHTML=(TRC.items||[]).map(function(x){return '<div class="item"><div class="it"><b>'+x.amount+' نقطة</b><small>من '+esc(x.from_name)+' <span class="ltr">('+esc(x.from_num)+')</span></small><small>إلى '+esc(x.to_name)+' <span class="ltr">('+esc(x.to_num)+')</span> · '+dt(x.at)+'</small></div></div>'}).join('')||'<p class="msg" style="color:#5B6B80">لا توجد تحويلات بعد.</p>'}
+$('tr-on').onclick=function(){this.classList.toggle('on')};
+$('tr-s').onclick=async function(){var on=$('tr-on').classList.contains('on'),m=parseInt($('tr-m').value),d=parseInt($('tr-d').value);
+  if(!(m>=1&&m<=10000)||!(d>=m&&d<=100000)){toast('الحد اليومي يجب ألا يقل عن حد التحويلة الواحدة','err');return}
+  if(on&&!(TRC&&TRC.on)&&!await ask('فتح التحويل','سيتمكن كل الطلاب من تحويل نقاطهم لبعضهم. هل تريد المتابعة؟','فتح'))return;
+  var r=await sb.rpc('admin_set_transfer',{p_on:on,p_max:m,p_daily:d});
+  if(r.error){toast(/function|schema cache|find/i.test(r.error.message||'')?'شغّل ملف b24_transfer.sql في Supabase أولاً':'فشل: '+r.error.message,'err');return}
+  if(r.data!=='ok'){toast(r.data==='forbidden'?'للمدير فقط':'تحقق من القيم','err');return}
+  toast(on?'تم فتح التحويل بين الطلاب':'التحويل مغلق','ok');rtr()};
 
 /* ---- v1.3 : shop + top-board controls ---- */
 var CHS=[['streetgirl','سورا',300],['maid','ليليان',600],['sorcerer','غوجو',1200],['king','سوكونا',2400],['player','ديبي',4800],['samurai','زورو',9600],['hphone','ابراهيم',1800],['stripe','عبدو',1800],['frost','فروست',3600],['katana','علموفيسكي',7200]];
